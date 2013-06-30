@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load bootstrap_toolkit %}
+{% load url from future %}
+
+{% block body_class %}{{ block.super }} home{% endblock %}
+
+{% block nav-search %}active{% endblock %}
+
+{% block sidebar %}
+<li class=""><a href="#search">Search</a></li>
+<!--li><a href="#results">Results</a></li-->
+{% endblock %}
+
+{% block content %}
+
+    <form id="search" class="form-search" action="{% url 'search' %}" method="POST">
+        {% csrf_token %}
+        <div class="input-append">
+            {{ form }}
+            <button type="submit" class="btn btn-primary"><i class="icon-search"></i></button>
+        </div>
+    </form>
+    <!--
+    <a href="#myModal" role="button" class="btn btn-primary" data-toggle="modal">Launch demo modal</a>
+    <div id="myModal" class="modal hide" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h3 id="myModalLabel">Modal header</h3>
+        </div>
+        <div class="modal-body">
+            <p>One fine body…</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+            <button class="btn btn-primary">Save changes</button>
+        </div>
+    </div>    -->
+
+    <div id="results">
+
+    </div>
+
+{% endblock %}
+
+{% block javascript %}
+{% endblock  %}
+
+{% block footer %}
+{% endblock  %}
