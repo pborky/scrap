@@ -1,8 +1,7 @@
 __author__ = 'pborky'
 
 from django import forms
-from django.contrib.auth.models import User
-from bootstrap_toolkit.widgets import BootstrapDateInput, BootstrapTextInput, BootstrapUneditableInput, BootstrapPasswordInput
+from bootstrap_toolkit.widgets import BootstrapTextInput, BootstrapPasswordInput
 
 class LoginForm(forms.Form):
     def __init__(self,*args,**kwargs):

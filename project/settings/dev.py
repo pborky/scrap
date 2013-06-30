@@ -36,7 +36,6 @@ try:
     )
     INSTALLED_APPS += (
         'debug_toolbar',
-        'demo_app',
     )
     DEBUG_TOOLBAR_CONFIG = {
         'INTERCEPT_REDIRECTS': False,

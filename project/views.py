@@ -1,5 +1,3 @@
-from django.http import HttpResponse
-
 __author__ = 'pborky'
 
 from django.contrib import messages
