@@ -14,10 +14,5 @@ share/
 init
 tmp/
 
-# django generated
-project/settings/secret.py
-project/settings/local.py
-project/static/*
-
 # python generated
 *.pyc
