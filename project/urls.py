@@ -1,7 +1,7 @@
 from django.conf.urls import patterns, include, url
-from django.views.generic import TemplateView
 
 from django.contrib import admin
+import tinymce.urls
 import app.urls
 from app.models import Engine
 
@@ -17,5 +17,6 @@ urlpatterns = patterns('',
     url(r'^login$', login, name='login'),
     url(r'^logout$', logout, name='logout'),
 
+    url(r'^tinymce/', include(tinymce.urls), name='tinymce'),
     url(r'^admin/', include(admin.site.urls), name='admin'),
 )
