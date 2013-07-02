@@ -35,8 +35,10 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </a>
-
-            <a class="brand" href="#">Application</a>
+            <span class="brand">
+                {{ site_data.brand|removetags:"p span"|safe }}
+                <a class="btn small" href="/admin/project/sitedata/3/">Change</a>
+            </span>
             <ul class="nav">
                 <li class="{% block nav-home %}{% endblock %}"><a href="{% url 'home' %}">Home</a></li>
                 <li class="{% block nav-search %}{% endblock %}"><a href="{% url 'search' %}">Search</a></li>
@@ -120,9 +122,9 @@
     <div class="container">
         <div class="container-fluid">
             <div class="row-fluid">
-                <div class="span2">Footer left</div>
+                <div class="span2">{{ site_data.footer_left|removetags:"p span"|safe }} <a class="btn small" href="/admin/project/sitedata/1/">Change</a></div>
                 <div class="span7 text-center">{% block footer %} {% endblock %}</div>
-                <div class="span2 text-right">Footer right</div>
+                <div class="span2 text-right"><a class="btn small" href="/admin/project/sitedata/2/">Change</a> {{ site_data.footer_right|removetags:"p span"|safe }} </div>
             </div>
         </div>
     </div>

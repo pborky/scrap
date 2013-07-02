@@ -35,7 +35,7 @@
                         <span class="icon-bar"></span>
                     </a>
 
-                    <a class="brand" href="#">Application</a>
+                    <span class="brand">{{ site_data.brand|removetags:"p a span"|safe }}</span>
                     <ul class="nav">
                         <li class="{% block nav-home %}{% endblock %}"><a href="{% url 'home' %}">Home</a></li>
                         <li class="{% block nav-search %}{% endblock %}"><a href="{% url 'search' %}">Search</a></li>
@@ -65,12 +65,11 @@
                             <li class="divider-vertical"></li>
                             <li class="dropdown">
                                 <a class="dropdown-toggle" href="#" data-toggle="dropdown">Sign In <strong class="caret"></strong></a>
-                                <div class="dropdown-menu" style="padding: 15px; padding-bottom: 0px;">
+                                <div class="dropdown-menu" style="padding: 20px; padding-bottom: 0;">
                                     <form class="form-inline" action="{% url 'login' %}" method="POST">
                                         {% csrf_token %}
                                         <input type="hidden" name="next" value="{{ request.get_full_path }}" />
-                                        <input type="text" name="username" placeholder="Username" />
-                                        <input type="password" name="password" placeholder="Password" />
+                                        {{ login_form|as_bootstrap:'inline' }}
                                         <button type="submit" class="btn btn-primary">Sign in</button>
                                         <button type="submit" class="btn" data-toggle="dropdown">Cancel</button>
                                     </form>
@@ -87,13 +86,13 @@
 
             <div class="container-fluid">
                 <div class="row-fluid">
-                    <div class="span2">
+                    <!--div class="span2">
                         <ul class="nav nav-list affix">
                             <li class="nav-header">Content</li>
                             {% block sidebar %} {% endblock  %}
                         </ul>
-                    </div>
-                    <div class="span9">
+                    </div-->
+                    <div class="span11">
                         {% bootstrap_messages %}
                         {% block content %} {% endblock  %}
                     </div>
@@ -109,9 +108,9 @@
             <div class="container">
                 <div class="container-fluid">
                     <div class="row-fluid">
-                        <div class="span2">Footer left</div>
+                        <div class="span2">{{ site_data.footer_left|removetags:"p span"|safe }}</div>
                         <div class="span7 text-center">{% block footer %} {% endblock %}</div>
-                        <div class="span2 text-right">Footer right</div>
+                        <div class="span2 text-right">{{ site_data.footer_right|removetags:"p span"|safe }} </div>
                     </div>
                 </div>
             </div>
