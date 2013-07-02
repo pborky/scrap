@@ -158,7 +158,7 @@ INSTALLED_APPS = (
     'app',
 )
 
-BOOTSTRAP_BASE_URL= '/static/'
+BOOTSTRAP_BASE_URL = STATIC_URL
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

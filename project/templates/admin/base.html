@@ -20,7 +20,7 @@
     {% block extrahead %}{% endblock %}
     {% block blockbots %}<meta name="robots" content="NONE,NOARCHIVE" />{% endblock %}
 
-    <script src="http://code.jquery.com/jquery.js"></script>
+    <script src="{{ STATIC_URL }}js/jquery.min.js"></script>
     {% bootstrap_javascript_tag %}
 </head>
 
