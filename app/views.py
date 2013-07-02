@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.shortcuts import redirect
 
 __author__ = 'pborky'
@@ -5,43 +6,7 @@ __author__ = 'pborky'
 from .forms import SearchForm
 from project.helpers import view
 from django.views.decorators import http, cache
-
-@view(
-    r'^demo$',
-    template = 'home.html',
-)
-@http.require_http_methods(('GET','POST'))
-def demo(request, *args, **kwargs):
-    if request.method == 'POST':
-        pass
-    elif request.method == 'GET':
-        pass
-
-@view(
-    r'^demo2$',
-    template = 'home.html',
-)
-class demo2:
-
-    def post(self, request, *args, **kwargs):
-        pass
-
-    def get(self, request, *args, **kwargs):
-        pass
-@view(
-    r'^demo3$',
-    template = 'home.html',
-)
-class demo3:
-
-    @staticmethod
-    def post(request, *args, **kwargs):
-        pass
-
-    @staticmethod
-    def get(request, *args, **kwargs):
-        pass
-
+from .models import SearchResult, SiteCategory, Search
 
 @view(
     r'^$',
@@ -56,18 +21,52 @@ class home:
 @view(
     r'^search$',
     template = 'search.html',
-    form_cls = (SearchForm,),
+    form_cls = {'search':SearchForm,},
     invalid_form_msg = 'You must select engine and enter query string.',
 )
 class search:
-
     @staticmethod
-    def get(request, *args, **kwargs):
+    def get(request, forms):
         pass
-
     @staticmethod
-    def post(request, *args, **kwargs):
-        pass
+    def post(request, forms):
+        data = forms['search'].data
+        if not (data['q'] == 'magicke houby' and data['engine'] == '1'):
+            messages.warning(request, 'Default input has been set for demo purposes.')
+        return redirect('search_results', searchid='1')
+
+@view(
+    r'^search2$',
+    redirect_to='search_results',
+    form_cls = {'search':SearchForm,},
+    invalid_form_msg = 'You must select engine and enter query string.',
+)
+class search_submit:
+    @staticmethod
+    def post(request, forms):
+        data = forms['search'].data
+        if not (data['q'] == 'magicke houby' and data['engine'] == '1'):
+            forms['search'] = SearchForm({'q': 'magicke houby', 'engine': '1'})
+            messages.warning(request, 'Default input has been set for demo purposes.')
+        return { 'searchid': '1' }
+
+
+@view(
+    r'^search/(?P<searchid>\d*)$',
+    template = 'search.html',
+    form_cls = {'search':SearchForm,},
+    invalid_form_msg = 'You must select engine and enter query string.',
+)
+class search_results:
+    @staticmethod
+    def get(request, searchid, forms):
+        search, = Search.objects.filter(id=int(searchid))
+        forms['search'] = SearchForm({'q': search.q, 'engine': search.engine.id })
+        return {
+            'forms': forms,
+            'results': SearchResult.objects.filter(search=search).order_by('sequence'),
+            'categories': SiteCategory.objects.filter(active=True).order_by("id"),
+            }
 
 @view(
     r'^scrap$',

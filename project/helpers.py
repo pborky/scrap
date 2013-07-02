@@ -1,15 +1,29 @@
-import types
 
 __author__ = 'pborky'
 
 
+import types
+
 from django.contrib import messages
-from django.shortcuts import render, redirect
 from django.views.decorators import http, cache
 from django.http import HttpResponse
 from django.conf.urls import patterns, include, url
 
 from functional import combinator,partial,flip
+
+
+from django.db.models import get_models, get_app
+from django.contrib import admin
+from django.contrib.admin.sites import AlreadyRegistered
+
+def autoregister(*app_list):
+    for app_name in app_list:
+        app_models = get_app(app_name)
+        for model in get_models(app_models):
+            try:
+                admin.site.register(model)
+            except AlreadyRegistered:
+                pass
 
 
 class Decorator(object):
@@ -19,7 +33,7 @@ class Decorator(object):
     def __call__(self, *args, **kwargs):
         return self.func.__call__(*args, **kwargs)
 
-def view(pattern, template, form_cls = None, redirect_to = None, invalid_form_msg = 'Form is not valid.', **kwargs):
+def view(pattern, template = None, form_cls = None, redirect_to = None, invalid_form_msg = 'Form is not valid.', **kwargs):
     class Wrapper(Decorator):
         def __init__(self, obj):
             super(Wrapper, self).__init__(obj)
@@ -47,31 +61,52 @@ def view(pattern, template, form_cls = None, redirect_to = None, invalid_form_ms
 
         @staticmethod
         def _mk_forms(*args, **kwargs):
-            if isinstance(form_cls,tuple):
-                return tuple(f(*args, **kwargs) for f in form_cls)
+            if isinstance(form_cls,tuple) or isinstance(form_cls, list):
+                return list(f(*args, **kwargs) for f in form_cls)
+            elif isinstance(form_cls, dict):
+                return dict((k,f(*args, **kwargs)) for k,f in form_cls.iteritems())
             else:
                 if form_cls is not None:
-                    return form_cls(*args, **kwargs),
+                    return [form_cls(*args, **kwargs),]
                 else:
-                    return None,
-
+                    return [None,]
+        @staticmethod
+        def _is_valid(forms):
+            if isinstance(forms,dict):
+                it = forms.itervalues()
+            else:
+                it = forms
+            return all(f.is_valid() if f is not None else True for f in it)
         def url(self):
             return url(pattern, self, kwargs, self.__name__)
 
         def __call__(self, request, *args, **kwargs):
+            from django.shortcuts import render, redirect
             try:
-                if request.method == 'POST':
-                    ret =  self.post(request, *args, **kwargs)
+                if request.method in ('POST',):
+
                     forms = self._mk_forms(request.POST)
-                    if not all(f.is_valid() for f in forms):
-                        forms =  self._mk_forms()
+                    ret =  self.post(request, *args, forms=forms, **kwargs)
+
+                    if isinstance(ret, HttpResponse):
+                        return ret
+
+                    if not self._is_valid(forms) and invalid_form_msg:
                         messages.error(request, invalid_form_msg)
 
-                elif request.method in ('GET', 'HEAD', 'OPTION', 'PUT', 'DELETE') :
-                    ret =  self.get(request, *args, **kwargs)
-                    forms =  self._mk_forms(request.GET)
-                    if not all(f.is_valid() if f is not None else True for f in forms):
-                        forms =  self._mk_forms()
+                elif request.method in ('GET',) :
+
+                    forms =  self._mk_forms(request.GET) if request.GET else self._mk_forms()
+
+                    ret =  self.get(request, *args, forms=forms, **kwargs)
+
+                    if isinstance(ret, HttpResponse):
+                        return ret
+
+                    if not self._is_valid(forms):
+                        #forms =  self._mk_forms()
+                        #messages.error(request, invalid_form_msg)
+                        pass
 
                 elif request.method in ('HEAD', 'OPTION', 'PUT', 'DELETE') :
                     ret =  {}  # not implemented yet
@@ -84,20 +119,24 @@ def view(pattern, template, form_cls = None, redirect_to = None, invalid_form_ms
                 return
 
 
-            if isinstance(ret, HttpResponse):
-                return ret
-            context_vars = {
-                'form': forms[0], # default form is first one
-                'forms': forms,
-                }
-            context_vars.update(kwargs)
-            if isinstance(ret,dict):
-                context_vars.update(ret)
-
             if redirect_to:
-                context_vars['template'] = template
+                context_vars = { }
+
+                context_vars.update(kwargs)
+
+                if isinstance(ret,dict):
+                    context_vars.update(ret)
+
                 return redirect(redirect_to, *args, **context_vars)
             else:
+                context_vars = {
+                            'forms': forms,
+                        }
+                context_vars.update(kwargs)
+
+                if isinstance(ret,dict):
+                    context_vars.update(ret)
+
                 return render(request, template, context_vars)
     return Wrapper
 

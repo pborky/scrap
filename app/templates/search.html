@@ -8,38 +8,116 @@
 {% block nav-search %}active{% endblock %}
 
 {% block sidebar %}
-<li class=""><a href="#search">Search</a></li>
-<!--li><a href="#results">Results</a></li-->
+
+
 {% endblock %}
 
 {% block content %}
 
-    <form id="search" class="form-search" action="{% url 'search' %}" method="POST">
+    <form id="search" class="form-search" action="{% url 'search_submit' %}" method="POST">
         {% csrf_token %}
         <div class="input-append">
-            {{ form }}
+            {{ forms.search|as_bootstrap:'inline'|removetags:'label' }}
             <button type="submit" class="btn btn-primary"><i class="icon-search"></i></button>
         </div>
     </form>
-    <!--
-    <a href="#myModal" role="button" class="btn btn-primary" data-toggle="modal">Launch demo modal</a>
-    <div id="myModal" class="modal hide" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-        <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-            <h3 id="myModalLabel">Modal header</h3>
-        </div>
-        <div class="modal-body">
-            <p>One fine body…</p>
-        </div>
-        <div class="modal-footer">
-            <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
-            <button class="btn btn-primary">Save changes</button>
-        </div>
-    </div>    -->
+    {% if results %}
+        <div class="tabbable tabs-left"> <!-- Only required for left/right tabs -->
 
-    <div id="results">
+            <ul class="nav nav-tabs">
+                {#  generate tabs on the right #}
+                {% for category in categories  %}
+                    <li class="{% if category.default %}active{% endif %} "><a href="#{{ category.symbol }}" data-toggle="tab">{{ category.name }}</a></li>
+                {% endfor %}
+                <li><a href="#banned" data-toggle="tab">Banned</a></li>
+            </ul>
 
-    </div>
+            {#  generate tab content #}
+            <div class="tab-content">
+
+                {%  for category in categories  %}
+                        <div class="tab-pane {% if category.default %}active{% endif %}" id="{{ category.symbol }}">
+
+                            <table class="table">
+                                {% for result in results %}
+                                    {% if result.site.category.symbol == category.symbol and not result.site.banned %}
+                                        <tr>
+                                            <td>{{ result.site.name }}</td>
+                                            <td><small><a target="_blank" href="{{ result.site.url }}">{{ result.site.url }}</a></small></td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <a class="btn btn-primary" href="#detail-{{ result.site.id }}" data-toggle="modal">Details</a>
+                                                    <a class="btn" href="#edit-{{ result.site.id }}" data-toggle="modal">Edit</a>
+                                                </div>
+                                            </td>
+                                            <td><a class="close" href="#">&times;</a></td>
+                                        </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            </table>
+
+                        </div>
+                {% endfor %}
+
+                <div class="tab-pane" id="banned">
+                    <table class="table">
+                        {% for result in results %}
+                            {% if result.site.banned %}
+                                <tr>
+                                    <td>{{ result.site.name }}</td>
+                                    <td><small><a target="_blank" href="{{ result.site.url }}">{{ result.site.url }}</a></small></td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a class="btn btn-primary" href="#detail-{{ result.site.id }}" data-toggle="modal">Details</a>
+                                            <a class="btn" href="#edit-{{ result.site.id }}">Edit</a>
+                                        </div>
+                                    </td>
+                                    <td><button class="close">&times;</button></td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </table>
+                </div>
+
+            </div>
+        </div>
+
+
+        {#  generate modal windows #}
+        {% for result in results %}
+
+            {#  deatil #}
+            <div id="detail-{{ result.site.id }}" class="modal hide" tabindex="-1" role="dialog" aria-labelledby="label1-{{ result.site.id }}" aria-hidden="true">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                    <h3 id="label1-{{ result.site.id }}">{{ result.site.name }}</h3>
+                </div>
+                <div class="modal-body">
+                    <p>One fine body…</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Close</button>
+                </div>
+            </div>
+
+            {#  edit #}
+            <div id="edit-{{ result.site.id }}" class="modal hide" tabindex="-1" role="dialog" aria-labelledby="label2-{{ result.site.id }}" aria-hidden="true">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                    <h3 id="label2-{{ result.site.id }}">{{ result.site.name }}</h3>
+                </div>
+                <div class="modal-body">
+                    <p>One fine body…</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+                    <button class="btn btn-primary">Save changes</button>
+                </div>
+            </div>
+
+        {% endfor %}
+
+    {% endif %}
 
 {% endblock %}
 
