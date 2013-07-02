@@ -156,6 +156,8 @@ INSTALLED_APPS = (
     'app',
 )
 
+BOOTSTRAP_BASE_URL= '/static/'
+
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
 # the site admins on every HTTP 500 error when DEBUG=False.
