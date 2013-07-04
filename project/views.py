@@ -8,7 +8,7 @@ from .forms import LoginForm
 
 @http.require_http_methods(('GET','POST'))
 @cache.never_cache
-@redirect(attr='next',fallback='/app/')
+@redirect(attr='nexturl',fallback='/')
 #@default_response()
 def login(request):
     from django.contrib.auth import login,authenticate
@@ -29,9 +29,10 @@ def login(request):
         pass
     messages.error(request, 'User authentication was unsuccessful.')
 
+
 @http.require_http_methods(('GET','POST'))
 @cache.never_cache
-@redirect(attr='next',fallback='/app/')
+@redirect(attr='nexturl',fallback='/')
 #@default_response()
 def logout(request):
     from django.contrib.auth import logout
