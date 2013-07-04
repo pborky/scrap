@@ -116,8 +116,10 @@ class SIteContent(models.Model):
     site = models.ForeignKey(Site)
     last_update = models.DateTimeField(verbose_name='Last Update Date', default=None, null=True, blank=True)
     shipment = models.ManyToManyField(ShipmentMethod)
+    shipment.help_text=''  # TODO: this is crap
     type = models.ForeignKey(SiteType, null=True, blank=True)
     links = models.ManyToManyField(Site, null=True, blank=True, related_name='link_sites')
+    links.help_text=''  # TODO: this is crap
     def __unicode__(self):
         return u'%s (%s)' %(self.site, self.date)
     class Meta:
