@@ -33,7 +33,7 @@ class Decorator(object):
     def __call__(self, *args, **kwargs):
         return self.func.__call__(*args, **kwargs)
 
-def view(pattern, template = None, form_cls = None, redirect_to = None, invalid_form_msg = 'Form is not valid.', **kwargs):
+def view(pattern, template = None, form_cls = None, redirect_to = None, redirect_attr = None, invalid_form_msg = 'Form is not valid.', **kwargs):
     class Wrapper(Decorator):
         def __init__(self, obj):
             super(Wrapper, self).__init__(obj)
@@ -59,6 +59,8 @@ def view(pattern, template = None, form_cls = None, redirect_to = None, invalid_
             for key, val in  permitted_methods.items():
                 setattr(self, key.lower(), require_http_methods_decorator(val))
 
+            self.permitted_methods = permitted_methods.keys()
+
         @staticmethod
         def _mk_forms(*args, **kwargs):
             if isinstance(form_cls,tuple) or isinstance(form_cls, list):
@@ -83,6 +85,10 @@ def view(pattern, template = None, form_cls = None, redirect_to = None, invalid_
         def __call__(self, request, *args, **kwargs):
             from django.shortcuts import render, redirect
             try:
+
+                if not request.method in self.permitted_methods:
+                    return http.HttpResponseNotAllowed(permitted_methods=self.permitted_methods)
+
                 if request.method in ('POST',):
 
                     forms = self._mk_forms(request.POST)
@@ -118,8 +124,9 @@ def view(pattern, template = None, form_cls = None, redirect_to = None, invalid_
             except AttributeError:
                 return
 
+            redirect_addr = request.GET[redirect_attr] if redirect_attr in request.GET else redirect_to
 
-            if redirect_to:
+            if redirect_addr:
                 context_vars = { }
 
                 context_vars.update(kwargs)
@@ -127,7 +134,7 @@ def view(pattern, template = None, form_cls = None, redirect_to = None, invalid_
                 if isinstance(ret,dict):
                     context_vars.update(ret)
 
-                return redirect(redirect_to, *args, **context_vars)
+                return redirect(redirect_addr, *args, **context_vars)
             else:
                 context_vars = {
                             'forms': forms,

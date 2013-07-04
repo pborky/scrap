@@ -3,10 +3,10 @@ from django.shortcuts import redirect
 
 __author__ = 'pborky'
 
-from .forms import SearchForm
+from .forms import SearchForm, SearchForm2, SiteContentForm
 from project.helpers import view
 from django.views.decorators import http, cache
-from .models import SearchResult, SiteCategory, Search
+from .models import SearchResult, SiteCategory, Search, Site, SIteContent, SiteAttributes
 
 @view(
     r'^$',
@@ -36,7 +36,7 @@ class search:
         return redirect('search_results', searchid='1')
 
 @view(
-    r'^search2$',
+    r'^do/search$',
     redirect_to='search_results',
     form_cls = {'search':SearchForm,},
     invalid_form_msg = 'You must select engine and enter query string.',
@@ -54,7 +54,7 @@ class search_submit:
 @view(
     r'^search/(?P<searchid>\d*)$',
     template = 'search.html',
-    form_cls = {'search':SearchForm,},
+    form_cls = {'search':SearchForm },
     invalid_form_msg = 'You must select engine and enter query string.',
 )
 class search_results:
@@ -62,11 +62,71 @@ class search_results:
     def get(request, searchid, forms):
         search, = Search.objects.filter(id=int(searchid))
         forms['search'] = SearchForm({'q': search.q, 'engine': search.engine.id })
+        forms['search2'] = SearchForm2(instance=search)
+        forms['editors'] = { }
+        details = {}
+        for result in SearchResult.objects.filter(search=search):
+
+            id = result.site.id, result.site.name, result.site.url
+
+            content = SIteContent.objects.filter(site=result.site )
+            if content:
+                content = content.latest('date')
+                forms['editors'][id] = SiteContentForm(instance=content)
+            else:
+                content = None
+                forms['editors'][id] = SiteContentForm()
+
+
+            attributes = SiteAttributes.objects.filter(site=result.site )
+            if attributes:
+                attributes = attributes.latest('date')
+            else:
+                attributes = None
+
+            details[id]= {
+                'attributes': attributes,
+                'content': content ,
+            }
+
         return {
             'forms': forms,
             'results': SearchResult.objects.filter(search=search).order_by('sequence'),
             'categories': SiteCategory.objects.filter(active=True).order_by("id"),
+            'details': details,
             }
+
+@view(
+    r'^edit/site$',
+    redirect_to='search',
+    redirect_attr='nexturl',
+    form_cls = {'edit': SiteContentForm},
+)
+class site_edit:
+    @staticmethod
+    def post(request, forms):
+        form = forms['edit']
+        if not form.is_valid():
+            return
+        form.save()
+        messages.success(request, 'Data successfuly saved.')
+
+@view(
+    r'^edit/site/banned$',
+    redirect_to='search',
+    redirect_attr='nexturl',
+    form_cls = None,
+)
+class site_ban:
+    @staticmethod
+    def post(request, forms):
+        site, = Site.objects.filter(id=int(request.POST['siteid']))
+        site.banned = not site.banned
+        site.save()
+        if site.banned:
+            messages.success(request, 'Site "%s" added to ban-list.' % (site.name,))
+        else:
+            messages.success(request, 'Site "%s" removed from ban-list.' % (site.name,))
 
 @view(
     r'^scrap$',
