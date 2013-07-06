@@ -1,3 +1,6 @@
+from bootstrap_toolkit.widgets import add_to_css_class
+from django.forms import TextInput
+from django.utils.safestring import mark_safe
 
 __author__ = 'pborky'
 
@@ -6,15 +9,15 @@ import types
 
 from django.contrib import messages
 from django.views.decorators import http, cache
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseServerError
 from django.conf.urls import patterns, include, url
 
 from functional import combinator,partial,flip
 
-
 from django.db.models import get_models, get_app
 from django.contrib import admin
 from django.contrib.admin.sites import AlreadyRegistered
+from django.forms.models import ModelFormMetaclass, ModelForm
 
 def autoregister(*app_list):
     for app_name in app_list:
@@ -121,8 +124,9 @@ def view(pattern, template = None, form_cls = None, redirect_to = None, redirect
                 else:
                     return
 
-            except AttributeError:
-                return
+            except AttributeError as e:
+                raise e
+                #return HttpResponseServerError()
 
             redirect_addr = request.GET[redirect_attr] if redirect_attr in request.GET else redirect_to
 
@@ -165,3 +169,66 @@ def default_response(response_cls=HttpResponse):
             ret = super(Wrapper,self).__call__(request, *args, **kwargs)
             return ret if ret else response_cls()
     return Wrapper
+
+
+class FormfieldCallback(object):
+
+    def __init__(self, meta=None, **kwargs):
+        if meta is None:
+            self.attrs = {}
+        elif isinstance(meta, dict):
+            self.attrs = meta
+        elif hasattr(meta, 'attrs'):
+            self.attrs = meta.attrs
+        else:
+            raise TypeError('Argument "meta" must be dict or must contain attibute "attrs".')
+        self.attrs.update(kwargs)
+
+    def __call__(self, field, **kwargs):
+        if field.name in self.attrs:
+            kwargs.update(self.attrs[field.name])
+        queryset_transform = kwargs.pop('queryset_transform', None)
+        if callable(queryset_transform):
+            pass #field.choices = queryset_transform(field.choices)
+        return field.formfield(**kwargs)
+
+class RichModelFormMetaclass(ModelFormMetaclass):
+    def __new__(mcs, name, bases, attrs):
+        Meta = attrs.get('Meta', None)
+        attributes = getattr(Meta, 'attrs', {}) if Meta else {}
+
+        if not attrs.has_key('formfield_callback'):
+            attrs['formfield_callback'] = FormfieldCallback(**attributes)
+        new_class = super(RichModelFormMetaclass, mcs).__new__(mcs, name, bases, attrs)
+        return new_class
+
+class ModelForm(ModelForm):
+    __metaclass__ =  RichModelFormMetaclass
+    def __init__ (self, *args, **kwargs):
+        super(ModelForm,self).__init__ (*args, **kwargs)
+        pass
+
+
+class Uneditable(TextInput):
+    def __init__(self, value_calback=None, choices=(), *args,  **kwargs):
+        super(Uneditable, self).__init__(*args, **kwargs)
+        self.value_calback = value_calback
+        self.choices = list(choices)
+        self.attrs['disabled'] = True
+
+    def render(self, name, value, attrs=None):
+        if attrs is None:
+            attrs = {}
+        attrs['type'] = 'hidden'
+        klass = add_to_css_class(self.attrs.pop('class', ''), 'uneditable-input')
+        klass = add_to_css_class(klass, attrs.pop('class', ''))
+
+        base = super(Uneditable, self).render(name, value, attrs)
+        if not isinstance(value, list):
+            value = [value]
+        if self.value_calback:
+            if not hasattr(self, 'choices') or isinstance(self.choices, list):
+                value = self.value_calback(None, value)
+            else:
+                value = self.value_calback(self.choices.queryset, value)
+        return mark_safe(base + u'<span class="%s" style="color: #555555; background-color: #eeeeee;" disabled="true">%s</span>' % (klass, value))

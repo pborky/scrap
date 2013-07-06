@@ -1,9 +1,9 @@
+__author__ = 'pborky'
+
 from django.contrib import messages
 from django.shortcuts import redirect
 
-__author__ = 'pborky'
-
-from .forms import SearchForm, SearchForm2, SiteContentForm
+from .forms import SearchForm, SiteContentForm, SiteContentReadOnlyForm, WhoisReadOnlyForm, IpReadOnlyForm
 from project.helpers import view
 from django.views.decorators import http, cache
 from .models import SearchResult, SiteCategory, Search, Site, SIteContent, SiteAttributes
@@ -61,9 +61,7 @@ class search_results:
     @staticmethod
     def get(request, searchid, forms):
         search, = Search.objects.filter(id=int(searchid))
-        forms['search'] = SearchForm({'q': search.q, 'engine': search.engine.id })
-        forms['search2'] = SearchForm2(instance=search)
-        forms['editors'] = { }
+        forms['search'] = forms['search2'] = SearchForm(instance=search)
         details = {}
         for result in SearchResult.objects.filter(search=search):
 
@@ -72,10 +70,8 @@ class search_results:
             content = SIteContent.objects.filter(site=result.site )
             if content:
                 content = content.latest('date')
-                forms['editors'][id] = SiteContentForm(instance=content)
             else:
                 content = None
-                forms['editors'][id] = SiteContentForm()
 
 
             attributes = SiteAttributes.objects.filter(site=result.site )
@@ -85,9 +81,11 @@ class search_results:
                 attributes = None
 
             details[id]= {
-                'attributes': attributes,
-                'content': content ,
-            }
+                'content_form': SiteContentForm(instance=content if content else SIteContent(site=result.site)) ,
+                'content': SiteContentReadOnlyForm(instance=content) if content else None ,
+                'whois': WhoisReadOnlyForm(instance=attributes.whois) if attributes else None,
+                'ip': None,  # IpReadOnlyForm(instance=attributes.ip) if attributes else None,
+                }
 
         return {
             'forms': forms,
@@ -97,7 +95,7 @@ class search_results:
             }
 
 @view(
-    r'^edit/site$',
+    r'^edit/site_content$',
     redirect_to='search',
     redirect_attr='nexturl',
     form_cls = {'edit': SiteContentForm},

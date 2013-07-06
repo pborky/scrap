@@ -1,49 +1,121 @@
-from django.forms import Form, ModelForm, ModelChoiceField, CharField, DateField, ModelMultipleChoiceField, TextInput, HiddenInput
-from django.contrib.auth.models import User
-from bootstrap_toolkit.widgets import BootstrapDateInput, BootstrapTextInput, BootstrapUneditableInput, BootstrapPasswordInput
-from .models import Engine,Search, SearchResult, SIteContent, Site, ShipmentMethod, SiteType
+from django.forms import HiddenInput, SelectMultiple
+from bootstrap_toolkit.widgets import BootstrapDateInput, BootstrapTextInput
+from django.utils.html import format_html
+from project.helpers import ModelForm,Uneditable
+from .models import Search, SIteContent, Whois, Ip
 
-
-class SearchForm(Form):
-    engine = ModelChoiceField(
-        label='',
-        empty_label = 'Select engine',
-        required=True,
-        queryset =  Engine.objects.filter(active=True),
-    )
-
-    q =  CharField(
-        label='',
-        max_length=100,
-        required=True,
-        widget=BootstrapTextInput(attrs={'placeholder': 'Query string'}),
-    )
-
-
-class SearchForm2(ModelForm):
+class SearchForm(ModelForm):
     class Meta:
         model = Search
-        exclude = ('date',)
+        fields = ('engine', 'q',)
+        attrs = {
+            'engine': {
+                'label': '',
+                'empty_label': 'Select engine',
+                'queryset': model.engine.get_query_set().filter(active=True),
+                },
+            'q': {
+                'label': '',
+                'widget': BootstrapTextInput(attrs={'placeholder': 'Query string'}),
+                },
+            }
 
 class SiteContentForm(ModelForm):
     class Meta:
         model = SIteContent
         fields = ('site', 'last_update', 'shipment', 'type', 'links')
-        labels = {
-            'last_update': 'Last updated',
-            'shipment': 'Shipment method',
-            'type': 'Shop type',
-            'links': 'Links to other sites',
+        attrs = {
+            'site': {
+                'widget': HiddenInput(),
+            },
+            'last_update': {
+                'label': 'Last updated',
+                'widget': BootstrapDateInput(attrs={'class': 'datepicker'}),
+            },
+            'shipment': {
+                'label': 'Shipment method',
+                'help_text': '',
+            },
+            'type': {
+                'label': 'Shop type',
+                'empty_label': 'Select shop type'
+            },
+            'links': {
+                'label': 'Links to other sites',
+                'help_text': '',
+                },
             }
-        help_texts = {
-            'last_update': 'Some useful help text.',
-            'shipment': 'Shipment method',
-            'type': 'Shop type',
-            'links': 'Links to other sites',
+
+
+class SiteContentReadOnlyForm(ModelForm):
+    class Meta:
+        model = SIteContent
+        fields = ('site', 'last_update', 'shipment', 'type', 'links')
+        attrs = {
+            'site': {
+                'widget': HiddenInput(attrs={'disabled':True}),
+                },
+            'last_update': {
+                'label': 'Last updated',
+                'widget': BootstrapDateInput(attrs={'class': 'datepicker','disabled':True}),
+                },
+            'shipment': {
+                'label': 'Shipment method',
+                'help_text': '',
+                'widget': Uneditable(
+                        value_calback=lambda qs,selected: ', '.join( shp.name for shp in qs if shp.id in selected )
+                    ),
+                },
+            'type': {
+                'label': 'Shop type',
+                'widget': Uneditable(
+                        value_calback=lambda qs,selected: ', '.join( type.name for type in qs if type.id in selected )
+                    ),
+            },
+            'links': {
+                'label': 'Links to other sites',
+                'help_text': '',
+                'widget': Uneditable(
+                        value_calback=lambda qs,selected: ', '.join( format_html('<a href="{0}">{1}</a>', lnk.url, lnk.name) for lnk in qs if lnk.id in selected )
+                    ),
+                },
             }
-        widgets = {
-            'site': HiddenInput(),
-            'last_update': BootstrapDateInput(attrs={'class': 'datepicker'}),
+
+
+class WhoisReadOnlyForm(ModelForm):
+    class Meta:
+        model = Whois
+        fields = ('date_from', 'contact', 'address1', 'address2')
+        attrs = {
+            'date_from': {
+                'label': 'Whois registration date',
+                'widget': BootstrapDateInput(attrs={'class': 'datepicker','disabled':True}),
+                },
+            'contact': {
+                'label': 'Whois contact',
+                'widget': Uneditable(value_calback=lambda qs,selected: ', '.join(selected)),
+                },
+            'address1': {
+                'label': 'Whois address (city)',
+                'widget': Uneditable(value_calback=lambda qs,selected: ', '.join(selected)),
+                },
+            'address2': {
+                'label': 'Whois address (country code)',
+                'widget': Uneditable(value_calback=lambda qs,selected: ', '.join(selected)),
+                },
             }
-        error_messages = {
-        }
+
+class IpReadOnlyForm(ModelForm):
+    class Meta:
+        model = Ip
+        fields = ('address', 'country' )
+        attrs = {
+            'address': {
+                'label': 'IP address',
+                'widget': Uneditable(),
+                },
+            'country': {
+                'label': 'Country code',
+                'widget': Uneditable( ),
+                },
+            }

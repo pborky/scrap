@@ -104,19 +104,32 @@
 
         {#  generate modal windows #}
         {#  edit #}
-        {% for key,form in forms.editors.items %}
+        {% for key,detail in details.items %}
             <div id="edit-{{ key.0 }}" class="modal hide" tabindex="-1" role="dialog" aria-labelledby="editlbl-{{ key.0 }}" aria-hidden="true"> <!-- style="margin: 0;left: 15%;right: 15%; width: 75%"-->
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
                     <h3 id="editlbl-{{ key.0 }}">{{ key.1 }} <small><a href="{{ key.2 }}" target="_blank">{{ key.2 }}</a></small></h3>
                 </div>
                 <div class="modal-body">
-
-                    <form id="form-{{ key.0 }}" action="{% url 'site_edit' %}?nexturl={{ request.get_full_path }}" method="POST">
-                        {% csrf_token %}
-                        <input type="hidden" name="siteid" value="{{ key.0 }}">
-                        {{ form|as_bootstrap:'horizontal' }}
-                    </form>
+                    <div class="row-fluid">
+                        <div class="span6">
+                            {% if detail.whois %}
+                                {{ detail.whois|as_bootstrap:'inline' }}
+                            {% endif %}
+                            {% if detail.ip %}
+                                {{ detail.ip|as_bootstrap:'inline' }}
+                            {% endif %}
+                        </div>
+                        <div class="span6">
+                            {% if detail.content_form %}
+                                <form id="form-{{ key.0 }}" action="{% url 'site_edit' %}?nexturl={{ request.get_full_path }}" method="POST">
+                                    {% csrf_token %}
+                                    <!--input type="hidden" name="siteid" value="{{ key.0 }}"-->
+                                    {{ detail.content_form|as_bootstrap:'inline' }}
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
@@ -132,53 +145,23 @@
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
                     <h3 id="detaillbl-{{ key.0 }}">{{ key.1 }} <small><a href="{{ key.2 }}" target="_blank">{{ key.2 }}</a></small></h3>
                 </div>
-                {% if detail.attributes %}
-                    <div class="modal-body">
-                        <form>
-                            {% csrf_token %}
-                                <div class="controls controls-row">
-                                    <label class="span3">IP addresses</label>
-                                    <span class="span4 uneditable-input">{% for ip in detail.attributes.ip.all %}{{ ip.address }} ({{ ip.country }}){% if not forloop.last %}, {% endif %}{% endfor %}</span>
-                                </div>
-                                <div class="controls controls-row">
-                                    <label class="span3">WHOIS from</label>
-                                    <span class="span4 uneditable-input datetime">{{ detail.attributes.whois.date_from|date  }}</span>
-                                </div>
-                                <div class="controls controls-row">
-                                    <label class="span3">WHOIS contact</label>
-                                    <span class="span4 uneditable-input">{{ detail.attributes.whois.contact  }}</span>
-                                </div>
-                                <div class="controls controls-row">
-                                    <label class="span3">WHOIS address</label>
-                                    <span class="span4 uneditable-input">{{ detail.attributes.whois.address1  }}{% if not forloop.last %}, {% endif %}{{ detail.attributes.whois.address2  }}</span>
-                                </div>
-                        </form>
+                <div class="modal-body">
+                    <div class="row-fluid">
+                        <div class="span6">
+                            {% if detail.whois %}
+                                {{ detail.whois|as_bootstrap:'inline' }}
+                            {% endif %}
+                            {% if detail.ip %}
+                                {{ detail.ip|as_bootstrap:'inline' }}
+                            {% endif %}
+                        </div>
+                        <div class="span6">
+                            {% if detail.content %}
+                                {{ detail.content|as_bootstrap:'inline' }}
+                            {% endif %}
+                        </div>
                     </div>
-                {% endif %}
-                {% if detail.content %}
-                    <div class="modal-body">
-
-                        <form>
-                                <div class="controls controls-row">
-                                    <label class="span3">Last updated</label>
-                                    <span class="span4 uneditable-input datetime">{{ detail.content.last_update|date  }}</span>
-                                </div>
-                                <div class="controls controls-row">
-                                    <label class="span3">Shipment methods</label>
-                                    <span class="span4 uneditable-input">{% for shp in detail.content.shipment.all %}{{ shp.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
-                                </div>
-                                <div class="controls controls-row">
-                                    <label class="span3">Shop type</label>
-                                    <span class="span4 uneditable-input">{{ detail.content.type.name  }}</span>
-                                </div>
-                                <div class="controls controls-row">
-                                    <label class="span3">Links to</label>
-                                    <span class="span4 uneditable-input">{% for lnk in detail.content.links.all %}<a href="{{ lnk.url }}">{{ lnk.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</span>
-                                </div>
-                            {{ form|as_bootstrap:'horizontal' }}
-                        </form>
-                    </div>
-                {% endif %}
+                </div>
                 <div class="modal-footer">
                     <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Close</button>
                 </div>
