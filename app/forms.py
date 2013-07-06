@@ -76,7 +76,7 @@ class SiteContentReadOnlyForm(ModelForm):
                 'label': 'Links to other sites',
                 'help_text': '',
                 'widget': Uneditable(
-                        value_calback=lambda qs,selected: ', '.join( format_html('<a href="{0}">{1}</a>', lnk.url, lnk.name) for lnk in qs if lnk.id in selected )
+                        value_calback=lambda qs,selected: [format_html(u'<a href="{0}">{1}</a>', lnk.url, lnk.name) for lnk in qs if lnk.id in selected ] ,
                     ),
                 },
             }

@@ -231,4 +231,11 @@ class Uneditable(TextInput):
                 value = self.value_calback(None, value)
             else:
                 value = self.value_calback(self.choices.queryset, value)
-        return mark_safe(base + u'<span class="%s" style="color: #555555; background-color: #eeeeee;" disabled="true">%s</span>' % (klass, value))
+        if isinstance(value,list):
+            if not value:
+                value =  u'<span class="%s" style="color: #555555; background-color: #eeeeee;" disabled="true"></span>' % klass
+            else:
+                value =  u''.join(u'<span class="%s" style="color: #555555; background-color: #eeeeee;" disabled="true">%s</span>' % (klass, val) for val in value)
+        else:
+            value = u'<span class="%s" style="color: #555555; background-color: #eeeeee;" disabled="true">%s</span>' % (klass, value)
+        return mark_safe(base + value)
