@@ -115,7 +115,7 @@ class IpReadOnlyForm(ModelForm):
                 'widget': Uneditable(),
                 },
             'country': {
-                'label': 'Country code',
+                'label': 'IP country code',
                 'widget': Uneditable( ),
                 },
             }

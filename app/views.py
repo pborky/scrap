@@ -80,11 +80,17 @@ class search_results:
             else:
                 attributes = None
 
+            if attributes:
+                ip = attributes.ip.all()
+                if ip:
+                    ip = ip[0]
+                whois = attributes.whois
+
             details[id]= {
                 'content_form': SiteContentForm(instance=content if content else SIteContent(site=result.site)) ,
                 'content': SiteContentReadOnlyForm(instance=content) if content else None ,
-                'whois': WhoisReadOnlyForm(instance=attributes.whois) if attributes else None,
-                'ip': None,  # IpReadOnlyForm(instance=attributes.ip) if attributes else None,
+                'whois': WhoisReadOnlyForm(instance=whois) if whois else None,
+                'ip': IpReadOnlyForm(instance=ip) if ip else None,
                 }
 
         return {
