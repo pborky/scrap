@@ -1,7 +1,7 @@
 from django.forms import HiddenInput, SelectMultiple
 from bootstrap_toolkit.widgets import BootstrapDateInput, BootstrapTextInput
 from django.utils.html import format_html
-from project.helpers import ModelForm,Uneditable
+from project.widgets import ModelForm,Uneditable
 from .models import Search, SIteContent, Whois, Ip
 
 class SearchForm(ModelForm):
@@ -30,7 +30,7 @@ class SiteContentForm(ModelForm):
             },
             'last_update': {
                 'label': 'Last updated',
-                'widget': BootstrapDateInput(attrs={'class': 'datepicker'}),
+                'widget': BootstrapDateInput(attrs={'class': 'datepicker', 'data-provide':'datepicker-inline' }),
             },
             'shipment': {
                 'label': 'Shipment method',
@@ -57,7 +57,7 @@ class SiteContentReadOnlyForm(ModelForm):
                 },
             'last_update': {
                 'label': 'Last updated',
-                'widget': BootstrapDateInput(attrs={'class': 'datepicker','disabled':True}),
+                'widget': BootstrapDateInput(attrs={'disabled':True}),
                 },
             'shipment': {
                 'label': 'Shipment method',
@@ -89,19 +89,19 @@ class WhoisReadOnlyForm(ModelForm):
         attrs = {
             'date_from': {
                 'label': 'Whois registration date',
-                'widget': BootstrapDateInput(attrs={'class': 'datepicker','disabled':True}),
+                'widget': BootstrapDateInput(attrs={'disabled':True}),
                 },
             'contact': {
                 'label': 'Whois contact',
-                'widget': Uneditable(value_calback=lambda qs,selected: ', '.join(selected)),
+                'widget': Uneditable(value_calback=lambda qs,selected: ', '.join(filter(None, selected))),
                 },
             'address1': {
                 'label': 'Whois address (city)',
-                'widget': Uneditable(value_calback=lambda qs,selected: ', '.join(selected)),
+                'widget': Uneditable(value_calback=lambda qs,selected: ', '.join(filter(None, selected))),
                 },
             'address2': {
                 'label': 'Whois address (country code)',
-                'widget': Uneditable(value_calback=lambda qs,selected: ', '.join(selected)),
+                'widget': Uneditable(value_calback=lambda qs,selected: ', '.join(filter(None, selected))),
                 },
             }
 

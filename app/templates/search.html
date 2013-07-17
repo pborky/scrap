@@ -8,10 +8,13 @@
 {% block nav-search %}active{% endblock %}
 
 {% block extrastyle %}
-    <!--link href="{{ STATIC_URL }}css/datepicker.css" rel="stylesheet"-->
+    <link href="{{ STATIC_URL }}css/datepicker.css" rel="stylesheet">
+    <link href="{{ STATIC_URL }}css/bootstrap-modal.css" rel="stylesheet">
 {% endblock %}
 {% block javascript_library %}
-    <!--script src="{{ STATIC_URL }}js/bootstrap-datepicker.js"></script-->
+    <script src="{{ STATIC_URL }}js/bootstrap-datepicker.js"></script>
+    <script src="{{ STATIC_URL }}js/bootstrap-modalmanager.js"></script>
+    <script src="{{ STATIC_URL }}js/bootstrap-modal.js"></script>
 {% endblock %}
 {% block sidebar %}
 
@@ -35,6 +38,7 @@
                 {% for category in categories  %}
                     <li class="{% if category.default %}active{% endif %} "><a href="#{{ category.symbol }}" data-toggle="tab">{{ category.name }}</a></li>
                 {% endfor %}
+                <li><a href="#other" data-toggle="tab">Other</a></li>
                 <li><a href="#banned" data-toggle="tab">Banned</a></li>
             </ul>
 
@@ -44,7 +48,7 @@
                 {%  for category in categories  %}
                         <div class="tab-pane {% if category.default %}active{% endif %}" id="{{ category.symbol }}">
 
-                            <table class="table">
+                            <table class="table" style="display: table;">
                                 {% for result in results %}
                                     {% if result.site.category.symbol == category.symbol and not result.site.banned %}
                                         <tr>
@@ -52,8 +56,8 @@
                                             <td><small><a target="_blank" href="{{ result.site.url }}">{{ result.site.url }}</a></small></td>
                                             <td>
                                                 <div class="btn-group">
-                                                    <a class="btn btn-primary" href="#detail-{{ result.site.id }}" data-toggle="modal">Details</a>
-                                                    <a class="btn" href="#edit-{{ result.site.id }}" data-toggle="modal">Edit</a>
+                                                    <a class="btn btn-primary ajax detail" ajax-modal-url="{% url 'site_content_detail' result.site.id %}" href="#detail-{{ result.site.id }}">Details</a>
+                                                    <a class="btn ajax edit" ajax-modal-url="{% url 'site_content_edit' result.site.id %}" href="#edit-{{ result.site.id }}">Edit</a>
 
                                                 </div>
                                             </td>
@@ -72,16 +76,16 @@
                         </div>
                 {% endfor %}
 
-                <div class="tab-pane" id="banned">
+                <div class="tab-pane" id="other">
                     <table class="table">
                         {% for result in results %}
-                            {% if result.site.banned %}
+                            {% if not result.site.category %}
                                 <tr>
                                     <td>{{ result.site.name }}</td>
                                     <td><small><a target="_blank" href="{{ result.site.url }}">{{ result.site.url }}</a></small></td>
                                     <td>
                                         <div class="btn-group">
-                                            <a class="btn btn-primary" href="#detail-{{ result.site.id }}" data-toggle="modal">Details</a>
+                                            <a class="btn btn-primary ajax detail" ajax-modal-url="{% url 'site_content_detail' result.site.id %}" href="#detail-{{ result.site.id }}" data-toggle="modal">Details</a>
                                             {# <a class="btn" href="#edit-{{ result.site.id }}">Edit</a> #}
                                         </div>
                                     </td>
@@ -98,76 +102,35 @@
                     </table>
                 </div>
 
+                <div class="tab-pane" id="banned">
+                    <table class="table">
+                        {% for result in results %}
+                            {% if result.site.banned %}
+                                <tr>
+                                    <td>{{ result.site.name }}</td>
+                                    <td><small><a target="_blank" href="{{ result.site.url }}">{{ result.site.url }}</a></small></td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a class="btn btn-primary ajax detail" href="#detail-{{ result.site.id }}" data-toggle="modal">Details</a>
+                                            {# <a class="btn" href="#edit-{{ result.site.id }}">Edit</a> #}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <form action="{% url 'site_ban' %}?nexturl={{ request.get_full_path }}%23banned" method="POST">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="siteid" value="{{ result.site.id }}">
+                                            <button class="close">&times;</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </table>
+                </div>
             </div>
         </div>
-
-
-        {#  generate modal windows #}
-        {#  edit #}
-        {% for key,detail in details.items %}
-            <div id="edit-{{ key.0 }}" class="modal hide" tabindex="-1" role="dialog" aria-labelledby="editlbl-{{ key.0 }}" aria-hidden="true"> <!-- style="margin: 0;left: 15%;right: 15%; width: 75%"-->
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                    <h3 id="editlbl-{{ key.0 }}">{{ key.1 }} <small><a href="{{ key.2 }}" target="_blank">{{ key.2 }}</a></small></h3>
-                </div>
-                <div class="modal-body">
-                    <div class="row-fluid">
-                        <div class="span6">
-                            {% if detail.whois %}
-                                {{ detail.whois|as_bootstrap:'inline' }}
-                            {% endif %}
-                            {% if detail.ip %}
-                                {{ detail.ip|as_bootstrap:'inline' }}
-                            {% endif %}
-                        </div>
-                        <div class="span6">
-                            {% if detail.content_form %}
-                                <form id="form-{{ key.0 }}" action="{% url 'site_edit' %}?nexturl={{ request.get_full_path }}" method="POST">
-                                    {% csrf_token %}
-                                    <!--input type="hidden" name="siteid" value="{{ key.0 }}"-->
-                                    {{ detail.content_form|as_bootstrap:'inline' }}
-                                </form>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
-                    <button class="btn btn-primary" form="form-{{ key.0 }}">Save changes</button>
-                </div>
-            </div>
-        {% endfor %}
-
-        {# details #}
-        {% for key,detail in details.items %}
-            <div id="detail-{{ key.0 }}" class="modal hide" tabindex="-1" role="dialog" aria-labelledby="detaillbl-{{ key.0 }}" aria-hidden="true"> <!-- style="margin: 0;left: 15%;right: 15%; width: 75%"-->
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                    <h3 id="detaillbl-{{ key.0 }}">{{ key.1 }} <small><a href="{{ key.2 }}" target="_blank">{{ key.2 }}</a></small></h3>
-                </div>
-                <div class="modal-body">
-                    <div class="row-fluid">
-                        <div class="span6">
-                            {% if detail.whois %}
-                                {{ detail.whois|as_bootstrap:'inline' }}
-                            {% endif %}
-                            {% if detail.ip %}
-                                {{ detail.ip|as_bootstrap:'inline' }}
-                            {% endif %}
-                        </div>
-                        <div class="span6">
-                            {% if detail.content %}
-                                {{ detail.content|as_bootstrap:'inline' }}
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Close</button>
-                </div>
-            </div>
-        {% endfor %}
-
+        <div id="ajax-modal" class="modal hide" tabindex="-1" role="dialog"  aria-hidden="true">
+        </div>
     {% endif %}
 
 {% endblock %}
@@ -188,7 +151,32 @@
     //$('.modal')
     //        .on('shown', function (e) { window.location.hash = e.target.id; })
     //        .on('hidden', function (e) { window.location.hash = ''; });
-    //$('.datepicker').datepicker()
+    var $modal = $('#ajax-modal');
+    //var $
+
+    $('.ajax').on('click', function(event){
+        // create the backdrop and wait for next modal to be triggered
+        $('body').modalmanager('loading');
+        var url = event.target.getAttribute("ajax-modal-url") + '?nexturl={{ request.get_full_path }}';
+        setTimeout(function() {
+            $modal.load(url, '', function(responseText, status){
+                if (status == 'success') {
+                    $modal.modal();
+                    $('#ajax-modal .datepicker').datepicker();
+                } else {
+                    $('body').modalmanager('removeLoading');
+                }
+            });
+        }, 100);
+    });
+    $modal.on('click', '.update', function(){
+        $modal.modal('loading');
+        setTimeout(function(){
+            $modal
+                    .modal('loading')
+                    .find('.modal-body');
+        }, 100);
+    });
     </script>
 {% endblock  %}
 
