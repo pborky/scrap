@@ -69,7 +69,7 @@ class Keyword(Model):
 class Site(Model):
     name = CharField(max_length=100, verbose_name='Name of Site', unique=True)
     url = URLField(verbose_name='URL of Site', unique=True)
-    category = ForeignKey(SiteCategory, verbose_name='Category of Site')
+    category = ForeignKey(SiteCategory, verbose_name='Category of Site', null=True, blank=True)
     banned = BooleanField(verbose_name='Banned')
     def __unicode__(self):
         return u'%s %s (%s)' %(banned_flag(self),self.name, self.url)
@@ -90,10 +90,10 @@ class Whois(Model):
         verbose_name_plural = "Whois"
 
 class Ip(Model):
-    address = GenericIPAddressField(verbose_name='IP Address')
-    country = CharField(max_length=10, verbose_name='Country Code')
+    address = GenericIPAddressField(verbose_name='IP Address',unique=True)
+    country = CharField(max_length=10, verbose_name='Country Code', null=True, blank=True)
     def __unicode__(self):
-        return u'%s (%s)' %(self.country, unicode(self.address))
+        return u'%s (%s)' %(unicode(self.address), self.country)
     class Meta:
         ordering = ["country", "address"]
         verbose_name = "IP Address"
@@ -102,8 +102,8 @@ class Ip(Model):
 class SiteAttributes(Model):
     date = DateTimeField(verbose_name='Date of Check',auto_now=True)
     site = ForeignKey(Site)
-    ip = ManyToManyField(Ip)
-    whois = ForeignKey(Whois)
+    ip = ManyToManyField(Ip, null=True, blank=True)
+    whois = ManyToManyField(Whois, null=True, blank=True)
     def __unicode__(self):
         return u'%s (%s)' %(self.site, self.date)
     class Meta:
@@ -138,7 +138,7 @@ class Search(Model):
 class SearchResult(Model):
     search = ForeignKey(Search)
     sequence = IntegerField(verbose_name='Sequence Number')
-    keyword = ForeignKey(Keyword)
+    keyword = ManyToManyField(Keyword, null=True, blank=True)
     site = ForeignKey(Site)
     def __unicode__(self):
         return u'%s (%s)' %(self.site, self.search.date)

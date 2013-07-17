@@ -4,7 +4,7 @@
 {% load bootstrap_toolkit %}
 <html lang="en">
 <head>
-    <title>{% block title %}{% endblock %}</title>
+    <title>{{ site_resource.title|removetags:"p span"|safe }} ~ {% block title %}{% endblock %}</title>
 
     <meta name="description" content="{% block meta_description %}{% endblock %}" />
     <meta name="author" content="{% block meta_author %}{% endblock %}" />
@@ -36,19 +36,18 @@
                 <span class="icon-bar"></span>
             </a>
             <span class="brand">
-                {{ site_data.brand|removetags:"p span"|safe }}
-                <a class="btn small" href="/admin/project/sitedata/3/">Change</a>
+                {{ site_resource.brand|removetags:"p span"|safe }}
             </span>
             <ul class="nav">
                 <li class="{% block nav-home %}{% endblock %}"><a href="{% url 'home' %}">Home</a></li>
                 <li class="{% block nav-search %}{% endblock %}"><a href="{% url 'search' %}">Search</a></li>
                 <li class="{% block nav-scrap %}{% endblock %}"><a href="{% url 'scrap' %}">Scrap</a></li>
-                <li class="active"><a href="{% url 'admin:index' %}">Admin</a></li>
             </ul>
 
             {# The drop down menu  #}
             {% if user.is_authenticated %}
                 <ul class="nav pull-right">
+                    <li class="active"><a href="{% url 'admin:index' %}">Admin</a></li>
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown">
                             {{ user.first_name }} {{ user.last_name }}
@@ -122,9 +121,9 @@
     <div class="container">
         <div class="container-fluid">
             <div class="row-fluid">
-                <div class="span2">{{ site_data.footer_left|removetags:"p span"|safe }} <a class="btn small" href="/admin/project/sitedata/1/">Change</a></div>
+                <div class="span2">{{ site_resource.footer_left|removetags:"p span"|safe }}</div>
                 <div class="span7 text-center">{% block footer %} {% endblock %}</div>
-                <div class="span2 text-right"><a class="btn small" href="/admin/project/sitedata/2/">Change</a> {{ site_data.footer_right|removetags:"p span"|safe }} </div>
+                <div class="span2 text-right">{{ site_resource.footer_right|removetags:"p span"|safe }} </div>
             </div>
         </div>
     </div>
