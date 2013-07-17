@@ -84,7 +84,11 @@
                         {% for result in results %}
                             {% if not result.site.category %}
                                 <tr>
-                                    <td><span class="badge badge-info">{{ result.sequence }}.</span> <small><a target="_blank" href="{{ result.site.url }}">{{ result.site.url }}</a></small> {% if result.fresh %} <span class="label label-important">New</span> {% endif %}</td>
+                                    <td>
+                                        <span class="badge badge-info" data-toggle="tooltip" data-placement="top" data-original-title="Original sequence number">{{ result.sequence }}.</span> <small>
+                                        <a target="_blank" href="{{ result.site.url }}">{{ result.site.url }}</a></small>
+                                        {% if result.fresh %} <span class="label label-important"  data-toggle="tooltip" data-placement="top" data-original-title="New item detected!">New</span> {% endif %}
+                                    </td>
                                     <td>{{ result.site.name }}</td>
                                     <td>
                                         <div class="btn-group">
