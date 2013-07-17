@@ -1,23 +1,16 @@
-from bootstrap_toolkit.widgets import add_to_css_class
-from django.forms import TextInput
-from django.utils.safestring import mark_safe
 
 __author__ = 'pborky'
 
-
 import types
-
 from django.contrib import messages
-from django.views.decorators import http, cache
-from django.http import HttpResponse, HttpResponseServerError
-from django.conf.urls import patterns, include, url
-
-from functional import combinator,partial,flip
-
+from django.views.decorators import http
+from django.http import HttpResponse
+from django.conf.urls import url
 from django.db.models import get_models, get_app
 from django.contrib import admin
 from django.contrib.admin.sites import AlreadyRegistered
-from django.forms.models import ModelFormMetaclass, ModelForm
+
+from functional import partial
 
 def autoregister(*app_list):
     for app_name in app_list:
@@ -36,7 +29,7 @@ class Decorator(object):
     def __call__(self, *args, **kwargs):
         return self.func.__call__(*args, **kwargs)
 
-def view(pattern, template = None, form_cls = None, redirect_to = None, redirect_attr = None, invalid_form_msg = 'Form is not valid.', **kwargs):
+def view(pattern, template = None, form_cls = None, redirect_to = None, redirect_attr = None, redirect_fallback=None, invalid_form_msg = 'Form is not valid.', decorators = (), **kwargs):
     class Wrapper(Decorator):
         def __init__(self, obj):
             super(Wrapper, self).__init__(obj)
@@ -55,14 +48,16 @@ def view(pattern, template = None, form_cls = None, redirect_to = None, redirect
 
                 else:
                     # in case we have decorated function instead of class..
-                    if hasattr(obj, '__call__'):
+                    if callable(obj):
                         permitted_methods[method.upper()] = obj
 
             require_http_methods_decorator = http.require_http_methods(request_method_list=permitted_methods.keys())
             for key, val in  permitted_methods.items():
-                setattr(self, key.lower(), require_http_methods_decorator(val))
+                setattr(self, key.lower(), val)
 
             self.permitted_methods = permitted_methods.keys()
+
+            self.inner = reduce(lambda fnc, dec: dec(fnc), (require_http_methods_decorator,)+decorators, self.inner )
 
         @staticmethod
         def _mk_forms(*args, **kwargs):
@@ -85,9 +80,14 @@ def view(pattern, template = None, form_cls = None, redirect_to = None, redirect
         def url(self):
             return url(pattern, self, kwargs, self.__name__)
 
-        def __call__(self, request, *args, **kwargs):
+        def __call__(self, *args, **kwargs):
+            return self.inner(*args, **kwargs)
+
+        def inner(self, request, *args, **kwargs):
             from django.shortcuts import render, redirect
             try:
+
+                fallback = False
 
                 if not request.method in self.permitted_methods:
                     return http.HttpResponseNotAllowed(permitted_methods=self.permitted_methods)
@@ -100,8 +100,12 @@ def view(pattern, template = None, form_cls = None, redirect_to = None, redirect
                     if isinstance(ret, HttpResponse):
                         return ret
 
-                    if not self._is_valid(forms) and invalid_form_msg:
-                        messages.error(request, invalid_form_msg)
+                    if not self._is_valid(forms):
+                        if invalid_form_msg:
+                            messages.error(request, invalid_form_msg)
+                        if redirect_fallback:  # fallback if failed
+                            return redirect(redirect_fallback, **ret)
+
 
                 elif request.method in ('GET',) :
 
@@ -169,73 +173,3 @@ def default_response(response_cls=HttpResponse):
             ret = super(Wrapper,self).__call__(request, *args, **kwargs)
             return ret if ret else response_cls()
     return Wrapper
-
-
-class FormfieldCallback(object):
-
-    def __init__(self, meta=None, **kwargs):
-        if meta is None:
-            self.attrs = {}
-        elif isinstance(meta, dict):
-            self.attrs = meta
-        elif hasattr(meta, 'attrs'):
-            self.attrs = meta.attrs
-        else:
-            raise TypeError('Argument "meta" must be dict or must contain attibute "attrs".')
-        self.attrs.update(kwargs)
-
-    def __call__(self, field, **kwargs):
-        if field.name in self.attrs:
-            kwargs.update(self.attrs[field.name])
-        queryset_transform = kwargs.pop('queryset_transform', None)
-        if callable(queryset_transform):
-            pass #field.choices = queryset_transform(field.choices)
-        return field.formfield(**kwargs)
-
-class RichModelFormMetaclass(ModelFormMetaclass):
-    def __new__(mcs, name, bases, attrs):
-        Meta = attrs.get('Meta', None)
-        attributes = getattr(Meta, 'attrs', {}) if Meta else {}
-
-        if not attrs.has_key('formfield_callback'):
-            attrs['formfield_callback'] = FormfieldCallback(**attributes)
-        new_class = super(RichModelFormMetaclass, mcs).__new__(mcs, name, bases, attrs)
-        return new_class
-
-class ModelForm(ModelForm):
-    __metaclass__ =  RichModelFormMetaclass
-    def __init__ (self, *args, **kwargs):
-        super(ModelForm,self).__init__ (*args, **kwargs)
-        pass
-
-
-class Uneditable(TextInput):
-    def __init__(self, value_calback=None, choices=(), *args,  **kwargs):
-        super(Uneditable, self).__init__(*args, **kwargs)
-        self.value_calback = value_calback
-        self.choices = list(choices)
-        self.attrs['disabled'] = True
-
-    def render(self, name, value, attrs=None):
-        if attrs is None:
-            attrs = {}
-        attrs['type'] = 'hidden'
-        klass = add_to_css_class(self.attrs.pop('class', ''), 'uneditable-input')
-        klass = add_to_css_class(klass, attrs.pop('class', ''))
-
-        base = super(Uneditable, self).render(name, value, attrs)
-        if not isinstance(value, list):
-            value = [value]
-        if self.value_calback:
-            if not hasattr(self, 'choices') or isinstance(self.choices, list):
-                value = self.value_calback(None, value)
-            else:
-                value = self.value_calback(self.choices.queryset, value)
-        if isinstance(value,list):
-            if not value:
-                value =  u'<span class="%s" style="color: #555555; background-color: #eeeeee;" disabled="true"></span>' % klass
-            else:
-                value =  u''.join(u'<span class="%s" style="color: #555555; background-color: #eeeeee;" disabled="true">%s</span>' % (klass, val) for val in value)
-        else:
-            value = u'<span class="%s" style="color: #555555; background-color: #eeeeee;" disabled="true">%s</span>' % (klass, value)
-        return mark_safe(base + value)
