@@ -9,11 +9,11 @@ SETTINGS=--settings=$(PROJECT_NAME).settings.test
 all: coverage
 
 rmenv: clean
-	rm -fr bin lib local include build init share man tmp
+	rm -fr bin lib local include build initenv share man tmp
 
 initenv:
 	virtualenv .
-	virtualenv  --relocatable .
+#	virtualenv  --relocatable .
 	mkdir tmp
 	echo '# Environment initialization placeholder. Do not delete. Use "make rmenv" to remove environment.' > $@
 
