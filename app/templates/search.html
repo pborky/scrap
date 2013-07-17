@@ -39,7 +39,7 @@
                     <li class="{% if category.default %}active{% endif %} "><a href="#{{ category.symbol }}" data-toggle="tab">{{ category.name }}</a></li>
                 {% endfor %}
                 <li><a href="#other" data-toggle="tab">Other</a></li>
-                <li><a href="#banned" data-toggle="tab">Banned</a></li>
+                <li><a href="#banned" data-toggle="tab" class="muted">Banned</a></li>
             </ul>
 
             {#  generate tab content #}
@@ -52,20 +52,23 @@
                                 {% for result in results %}
                                     {% if result.site.category.symbol == category.symbol and not result.site.banned %}
                                         <tr>
+                                            <td>
+                                                <span class="badge badge-info" data-toggle="tooltip" data-placement="top" data-original-title="Original sequence number">{{ result.sequence }}.</span> <small>
+                                                <a target="_blank" href="{{ result.site.url }}">{{ result.site.url }}</a></small>
+                                                {% if result.fresh %} <span class="label label-important"  data-toggle="tooltip" data-placement="top" data-original-title="New item detected!">New</span> {% endif %}
+                                            </td>
                                             <td>{{ result.site.name }}</td>
-                                            <td><small><a target="_blank" href="{{ result.site.url }}">{{ result.site.url }}</a></small></td>
                                             <td>
                                                 <div class="btn-group">
                                                     <a class="btn btn-primary ajax detail" ajax-modal-url="{% url 'site_content_detail' result.site.id %}" href="#detail-{{ result.site.id }}">Details</a>
                                                     <a class="btn ajax edit" ajax-modal-url="{% url 'site_content_edit' result.site.id %}" href="#edit-{{ result.site.id }}">Edit</a>
-
                                                 </div>
                                             </td>
                                             <td>
                                                 <form action="{% url 'site_ban' %}?nexturl={{ request.get_full_path }}%23{{ category.symbol }}" method="POST">
                                                     {% csrf_token %}
                                                     <input type="hidden" name="siteid" value="{{ result.site.id }}">
-                                                    <button class="close">&times;</button>
+                                                    <button class="close" data-toggle="tooltip" data-placement="top" data-original-title="Add to ban list">&times;</button>
                                                 </form>
                                             </td>
                                         </tr>
@@ -81,8 +84,8 @@
                         {% for result in results %}
                             {% if not result.site.category %}
                                 <tr>
+                                    <td><span class="badge badge-info">{{ result.sequence }}.</span> <small><a target="_blank" href="{{ result.site.url }}">{{ result.site.url }}</a></small> {% if result.fresh %} <span class="label label-important">New</span> {% endif %}</td>
                                     <td>{{ result.site.name }}</td>
-                                    <td><small><a target="_blank" href="{{ result.site.url }}">{{ result.site.url }}</a></small></td>
                                     <td>
                                         <div class="btn-group">
                                             <a class="btn btn-primary ajax detail" ajax-modal-url="{% url 'site_content_detail' result.site.id %}" href="#detail-{{ result.site.id }}" data-toggle="modal">Details</a>
@@ -93,7 +96,7 @@
                                         <form action="{% url 'site_ban' %}?nexturl={{ request.get_full_path }}%23banned" method="POST">
                                             {% csrf_token %}
                                             <input type="hidden" name="siteid" value="{{ result.site.id }}">
-                                            <button class="close">&times;</button>
+                                            <button class="close" data-toggle="tooltip" data-placement="top" data-original-title="Add to ban list">&times;</button>
                                         </form>
                                     </td>
                                 </tr>
@@ -105,13 +108,13 @@
                 <div class="tab-pane" id="banned">
                     <table class="table">
                         {% for result in results %}
-                            {% if result.site.banned %}
+                            {% if result.site.banned  %}
                                 <tr>
+                                    <td><span class="badge badge-info">{{ result.sequence }}.</span> <small><a target="_blank" href="{{ result.site.url }}">{{ result.site.url }}</a></small> {% if result.fresh %} <span class="label label-important">New</span> {% endif %}</td>
                                     <td>{{ result.site.name }}</td>
-                                    <td><small><a target="_blank" href="{{ result.site.url }}">{{ result.site.url }}</a></small></td>
                                     <td>
                                         <div class="btn-group">
-                                            <a class="btn btn-primary ajax detail" href="#detail-{{ result.site.id }}" data-toggle="modal">Details</a>
+                                            <a class="btn btn-primary ajax detail" ajax-modal-url="{% url 'site_content_detail' result.site.id %}" href="#detail-{{ result.site.id }}" data-toggle="modal">Details</a>
                                             {# <a class="btn" href="#edit-{{ result.site.id }}">Edit</a> #}
                                         </div>
                                     </td>
@@ -119,7 +122,7 @@
                                         <form action="{% url 'site_ban' %}?nexturl={{ request.get_full_path }}%23banned" method="POST">
                                             {% csrf_token %}
                                             <input type="hidden" name="siteid" value="{{ result.site.id }}">
-                                            <button class="close">&times;</button>
+                                            <button class="close" data-toggle="tooltip" data-placement="top" data-original-title="Remove from ban list">&times;</button>
                                         </form>
                                     </td>
                                 </tr>
@@ -146,37 +149,34 @@
     }
 
     // Change hash for page-reload
-    $('.nav-tabs a')
-            .on('shown', function (e) { window.location.hash = e.target.hash; });
+    //$('.nav-tabs a')
+    //        .on('shown', function (e) { window.location.hash = e.target.hash; });
     //$('.modal')
     //        .on('shown', function (e) { window.location.hash = e.target.id; })
     //        .on('hidden', function (e) { window.location.hash = ''; });
     var $modal = $('#ajax-modal');
     //var $
-
-    $('.ajax').on('click', function(event){
-        // create the backdrop and wait for next modal to be triggered
-        $('body').modalmanager('loading');
-        var url = event.target.getAttribute("ajax-modal-url") + '?nexturl={{ request.get_full_path }}';
-        setTimeout(function() {
-            $modal.load(url, '', function(responseText, status){
-                if (status == 'success') {
-                    $modal.modal();
-                    $('#ajax-modal .datepicker').datepicker();
-                } else {
-                    $('body').modalmanager('removeLoading');
-                }
-            });
-        }, 100);
-    });
-    $modal.on('click', '.update', function(){
-        $modal.modal('loading');
-        setTimeout(function(){
-            $modal
-                    .modal('loading')
-                    .find('.modal-body');
-        }, 100);
-    });
+    var modalLoad = function(loadingElem, url) {
+        return function(event) {
+            // create the backdrop and wait for next modal to be triggered
+            loadingElem.modalmanager('loading');
+            var _url = event.target.getAttribute("ajax-modal-url"); // + '?nexturl={{ request.get_full_path }}';
+            if (_url) url = _url;
+            setTimeout(function() {
+                $modal.load(url, '', function(responseText, status){
+                    loadingElem.modalmanager('removeLoading');
+                    if (status == 'success') {
+                        $modal.modal();
+                        $('#ajax-modal .datepicker').datepicker();
+                        $('[data-toggle=tooltip]').tooltip();
+                        $('#ajax-modal .update').on( 'click', modalLoad($modal,url) );
+                    }
+                });
+            }, 100);
+        };
+    };
+    $('.ajax').on('click', modalLoad($('body')));
+    $('[data-toggle=tooltip]').tooltip();
     </script>
 {% endblock  %}
 

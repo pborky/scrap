@@ -2,7 +2,7 @@ __author__ = 'pborky'
 
 from django.contrib import messages
 from django.shortcuts import redirect
-from django.http import HttpResponseNotFound
+from django.http import HttpResponseNotFound, HttpResponseServerError, HttpResponse
 from django.views.decorators import http, cache
 
 from quirks.functional import maybe
@@ -85,6 +85,7 @@ class search_submit:
                         continue
 
 
+                fresh = False
                 if not site:
                     scraped_keywords = root_page_keywords(bare_url)
                     for kw in Keyword.objects.all():
@@ -113,7 +114,9 @@ class search_submit:
                     if whois:
                         site_attr.whois.add(*whois)
 
-                search_result = SearchResult(search=search, sequence=res.get('_seq'), site=site)
+                    fresh = True
+
+                search_result = SearchResult(search=search, sequence=res.get('_seq'), site=site, fresh=fresh)
                 search_result.save()
                 if keywords:
                     search_result.keyword.add(*keywords)
@@ -169,7 +172,7 @@ class search_results:
 
         return {
             'forms': forms,
-            'results': SearchResult.objects.filter(search=search).order_by('sequence'),
+            'results': SearchResult.objects.filter(search=search).order_by('-fresh','sequence'),
             'categories': SiteCategory.objects.filter(active=True).order_by("id"),
             'details': details,
             }
@@ -244,8 +247,6 @@ class site_content_edit:
 
 @view(
     r'^site-content/edit$',
-    redirect_to='search',
-    redirect_attr='nexturl',
     form_cls = {'edit': SiteContentForm},
 )
 class site_edit:
@@ -253,9 +254,10 @@ class site_edit:
     def post(request, forms):
         form = forms['edit']
         if not form.is_valid():
-            return
+            return HttpResponseServerError()
         form.save()
         messages.success(request, 'Data successfuly saved.')
+        return HttpResponse()
 
 @view(
     r'^site/banned/edit$',

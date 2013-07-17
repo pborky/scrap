@@ -140,6 +140,7 @@ class SearchResult(Model):
     sequence = IntegerField(verbose_name='Sequence Number')
     keyword = ManyToManyField(Keyword, null=True, blank=True)
     site = ForeignKey(Site)
+    fresh = BooleanField(default=False)
     def __unicode__(self):
         return u'%s (%s)' %(self.site, self.search.date)
     class Meta:
