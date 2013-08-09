@@ -23,13 +23,24 @@
 
 {% block content %}
 
-    <form id="search" class="form-search" action="{% url 'search_submit' %}" method="POST">
-        {% csrf_token %}
-        <div class="input-append">
-            {{ forms.search|as_bootstrap:'inline'|removetags:'label' }}
-            <button type="submit" class="btn btn-primary"><i class="icon-search"></i></button>
-        </div>
-    </form>
+    <ul class="nav nav-pills">
+        <li class="{% if forms.search %}active{% endif %}">
+            <a href="{% url 'search' %}">Manual</a>
+        </li>
+        <li class="{% if not forms.search %}active{% endif %}">
+            <a href="{% url 'search_results_all' %}">All results</a>
+        </li>
+    </ul>
+
+    {%  if forms.search %}
+        <form id="search" class="form-search" action="{% url 'search_submit' %}" method="POST">
+            {% csrf_token %}
+            <div class="input-append">
+                {{ forms.search|as_bootstrap:'inline'|removetags:'label' }}
+                <button type="submit" class="btn btn-primary"><i class="icon-search"></i></button>
+            </div>
+        </form>
+    {% endif %}
     {% if results %}
         <div class="tabbable tabs-left"> <!-- Only required for left/right tabs -->
 

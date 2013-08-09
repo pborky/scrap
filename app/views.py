@@ -174,13 +174,41 @@ class search_results:
                 'content': None, #  SiteContentReadOnlyForm(instance=content) if content else None ,
                 'whois': None, #  WhoisReadOnlyForm(instance=whois) if whois else None,
                 'ip': None, #  IpReadOnlyForm(instance=ip) if ip else None,
-                }
+            }
 
         return {
             'forms': forms,
             'results': SearchResult.objects.filter(search=search).order_by('-fresh','sequence'),
             'categories': SiteCategory.objects.filter(active=True).order_by("id"),
             'details': details,
+            }
+
+@view(
+    r'^search/all$',
+    template = 'search.html',
+)
+class search_results_all:
+    @staticmethod
+    def get(request, forms):
+
+        try:
+            search = Search.objects.all()
+        except:
+            return HttpResponseNotFound()
+
+        details = set()
+        results = {}
+        for res in SearchResult.objects.all():
+            id = res.site.id
+            if id not in details:
+                results[id] = res
+            else:
+                results[id].fresh = False
+
+        return {
+            'forms': forms,
+            'results': sorted(results.values(), key=lambda v: (v.fresh,v.search.date,-v.sequence), reverse=True ),
+            'categories': SiteCategory.objects.filter(active=True).order_by("id"),
             }
 
 def update_site_details(site, attributes):
