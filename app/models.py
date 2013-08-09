@@ -123,10 +123,20 @@ class SIteContent(Model):
         ordering = ["site", "date"]
         verbose_name = "Site Content Check"
 
+class Queries(Model):
+    q = CharField(max_length=100, verbose_name='Search String')
+    def __unicode__(self):
+        return u'%s' % self.q
+    class Meta:
+        ordering = ["q"]
+        verbose_name = "Search Query"
+        verbose_name_plural = "Search Queries"
+
 class Search(Model):
     date = DateTimeField(verbose_name='Date of Search',auto_now=True)
     engine = ForeignKey(Engine)
     q = CharField(max_length=100, verbose_name='Search String')
+    query = ForeignKey(Queries, null=True, blank=True)
     def __unicode__(self):
         return u'"%s" with %s (%s)' %(self.q, self.engine, self.date)
     class Meta:
