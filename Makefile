@@ -63,3 +63,12 @@ update: ensure_virtualenv
 	$(MANAGE) syncdb
 	$(MANAGE) migrate
 	$(MANAGE) collectstatic --noinput
+
+
+migrate-init/%: ensure_virtualenv 
+	$(MANAGE) schemamigration $* --initial
+	$(MANAGE) migrate $* --fake
+
+migrate-update/%: ensure_virtualenv
+	$(MANAGE) schemamigration $*  --auto
+	$(MANAGE) migrate $*
