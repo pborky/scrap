@@ -13,7 +13,7 @@ from .models import SearchResult, SiteCategory, Search, Site, SIteContent, SiteA
 
 from project.helpers import view
 from project.addrutil import addrutil
-from project.searches import google_search, root_page_keywords
+from project.searches import google_search, root_page_keywords, engines
 
 
 def url_depath(url):
@@ -64,66 +64,72 @@ class search_submit:
         data = form.data
         query = data.get('q')
         engine = data.get('engine')
-        if query:
-            engine = Engine.objects.get(id=engine)
-            search = Search.objects.create(engine=engine, q=query)
-            search.save()
-            for res in itake(20, google_search(q=query)):
-                res.update(addrutil(res['url'])) # add data from DNS & WHOIS
-                bare_url = url_depath(res['url']) # remove path from url
-                keywords = []
-                category = None
-                site = None
-                try:
-                    site = Site.objects.get(url=bare_url)
-                except Exception:
-                    pass
 
-                if site:
-                    # once processed in this run, we continue
-                    if SearchResult.objects.filter(site=site, search=search):
-                        continue
-
-
-                fresh = False
-                if not site:
-                    scraped_keywords = root_page_keywords(bare_url)
-                    for kw in Keyword.objects.all():
-                        if kw.keyword in scraped_keywords:
-                            category = kw.category
-                            keywords.append(kw)
-                            break
-
-                    site = Site(name=res.get('title'), url=bare_url, category=category, banned=False)
-                    site.save()
-
-                    site_attr = SiteAttributes(site=site)
-                    site_attr.save()
-
-                    ips = map(
-                        lambda ip: Ip.objects.get_or_create(**ip)[0],
-                        res.get('addresses',())
-                    )
-                    if ips:
-                        site_attr.ip.add(*ips)
-                        site_attr.save()
-                    whois = map(
-                        lambda whois: Whois.objects.get_or_create(**whois)[0],
-                        res.get('whois',())
-                    )
-                    if whois:
-                        site_attr.whois.add(*whois)
-
-                    fresh = True
-
-                search_result = SearchResult(search=search, sequence=res.get('_seq'), site=site, fresh=fresh)
-                search_result.save()
-                if keywords:
-                    search_result.keyword.add(*keywords)
-                search_result.save()
-            return { 'searchid': search.id }
-        else:
+        if not query:
             return {}
+
+        engine = Engine.objects.get(id=engine)
+
+        if engine.symbol not in engines:
+            return {}
+
+        search = Search.objects.create(engine=engine, q=query)
+        search.save()
+
+        for res in itake(20, engines[engine.symbol](q=query)):
+            res.update(addrutil(res['url'])) # add data from DNS & WHOIS
+            bare_url = url_depath(res['url']) # remove path from url
+            keywords = []
+            category = None
+            site = None
+            try:
+                site = Site.objects.get(url=bare_url)
+            except Exception:
+                pass
+
+            if site:
+                # once processed in this run, we continue
+                if SearchResult.objects.filter(site=site, search=search):
+                    continue
+
+
+            fresh = False
+            if not site:
+                scraped_keywords = root_page_keywords(bare_url)
+                for kw in Keyword.objects.all():
+                    if kw.keyword in scraped_keywords:
+                        category = kw.category
+                        keywords.append(kw)
+                        break
+
+                site = Site(name=res.get('title'), url=bare_url, category=category, banned=False)
+                site.save()
+
+                site_attr = SiteAttributes(site=site)
+                site_attr.save()
+
+                ips = map(
+                    lambda ip: Ip.objects.get_or_create(**ip)[0],
+                    res.get('addresses',())
+                )
+                if ips:
+                    site_attr.ip.add(*ips)
+                    site_attr.save()
+                whois = map(
+                    lambda whois: Whois.objects.get_or_create(**whois)[0],
+                    res.get('whois',())
+                )
+                if whois:
+                    site_attr.whois.add(*whois)
+
+                fresh = True
+
+            search_result = SearchResult(search=search, sequence=res.get('_seq'), site=site, fresh=fresh)
+            search_result.save()
+            if keywords:
+                search_result.keyword.add(*keywords)
+            search_result.save()
+        return { 'searchid': search.id }
 
 
 @view(
@@ -177,7 +183,44 @@ class search_results:
             'details': details,
             }
 
-def get_site_details(siteid):
+def update_site_details(site, attributes):
+
+    try:
+        res = addrutil(site.url) # add data from DNS & WHOIS
+
+        ips = set(map(
+            lambda ip: Ip.objects.get_or_create(**ip)[0],
+            res.get('addresses',())
+        ))
+        whois = set(map(
+            lambda whois: Whois.objects.get_or_create(**whois)[0],
+            res.get('whois',())
+        ))
+
+        if ips != frozenset(attributes.ip.all()) or whois != frozenset(attributes.whois.all()):
+            site_attr = SiteAttributes(site=site)
+            site_attr.save()
+
+            if whois:
+                site_attr.whois.add(*whois)
+            elif attributes:
+                site_attr.whois.add(*attributes.whois.all())
+
+            if ips:
+                site_attr.ip.add(*ips)
+            elif attributes:
+                site_attr.ip.add(*attributes.ip.all())
+
+            site_attr.save()
+
+            attributes =  site_attr
+
+    except:
+        pass
+
+    return attributes
+
+def get_site_details(siteid, update= False):
     site = Site.objects.get(id=int(siteid))
 
     content = attributes = ip = whois = None
@@ -191,6 +234,9 @@ def get_site_details(siteid):
         attributes = SiteAttributes.objects.filter(site=site ).latest('date')
     except:
         pass
+
+    if update:
+        attributes = update_site_details(site, attributes)
 
     if attributes:
         ip = first(attributes.ip.all())
@@ -230,7 +276,7 @@ class site_content_edit:
     def get(request, forms, siteid):
         nexturl = request.GET.get('nexturl')
         try:
-            site,content,whois,ip = get_site_details(siteid)
+            site,content,whois,ip = get_site_details(siteid, update=True)
         except:
             return HttpResponseNotFound()
 
@@ -258,6 +304,34 @@ class site_edit:
         form.save()
         messages.success(request, 'Data successfuly saved.')
         return HttpResponse()
+
+@view(
+    r'^site/name/edit$',
+    redirect_to='search',
+    redirect_attr='nexturl',
+    form_cls = None,
+)
+class site_edit_name:
+    @staticmethod
+    def post(request, forms):
+        site = Site.objects.get(id=int(request.POST['siteid']))
+        site.name = request.POST['name']
+        site.save()
+        messages.success(request, 'Data successfuly saved.')
+
+@view(
+    r'^site/category/edit$',
+    redirect_to='search',
+    redirect_attr='nexturl',
+    form_cls = None,
+)
+class site_edit_category:
+    @staticmethod
+    def post(request, forms):
+        site = Site.objects.get(id=int(request.POST['siteid']))
+        site.category = SiteCategory.objects.get(id=int(request.POST['category'])) if request.POST['category'] else None
+        site.save()
+        messages.success(request, 'Data successfuly saved.')
 
 @view(
     r'^site/banned/edit$',

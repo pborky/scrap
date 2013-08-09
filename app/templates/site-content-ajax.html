@@ -11,6 +11,39 @@
         <div class="row-fluid">
             <div id="alerts"></div>
         </div>
+        {% if edit %}
+            <div class="row-fluid">
+                <div class="span6">
+                    <form id="form-{{ site.id }}" action="{% url 'site_edit_name' %}?nexturl={{ nexturl }}" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="siteid" value="{{ site.id }}">
+                        <label for="id_name">Site name</label>
+                        <div class="input-append">
+                            <input class="" id="id_name" maxlength="100" name="name" type="text" value="{{ site.name }}">
+                            <button class="btn " data-toggle="tooltip" data-placement="top" data-original-title="Change name">
+                                <i class="icon-ok"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="span6">
+                    <form id="form-{{ site.id }}" action="{% url 'site_edit_category' %}?nexturl={{ nexturl }}" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="siteid" value="{{ site.id }}">
+                        <label for="id_category">Site category</label>
+                        <div class="input-append">
+                            <select class="" id="id_category" maxlength="100" name="category" value="{{ site.category.id }}">
+                                <option value=1>E-Shop</option>
+                                <option value="">Other</option>
+                            </select>
+                            <button class="btn " data-toggle="tooltip" data-placement="top" data-original-title="Change category">
+                                <i class="icon-ok"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
         <div class="row-fluid">
             <div class="span6">
                 {% if detail.whois %}

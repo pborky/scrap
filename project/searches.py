@@ -62,5 +62,9 @@ class RootPage(Scraper):
         scraping = KeywordSet('/')
 
 google_search = GoogleSearch()
+engines = {
+    'GOOG_S': google_search
+}
 root_page_keywords = RootPage()
+
 

@@ -59,9 +59,27 @@
                                             </td>
                                             <td>{{ result.site.name }}</td>
                                             <td>
-                                                <div class="btn-group">
-                                                    <a class="btn btn-primary ajax detail" ajax-modal-url="{% url 'site_content_detail' result.site.id %}" href="#detail-{{ result.site.id }}">Details</a>
-                                                    <a class="btn ajax edit" ajax-modal-url="{% url 'site_content_edit' result.site.id %}" href="#edit-{{ result.site.id }}">Edit</a>
+                                                <form  hidden method="POST" id="detail-{{ result.site.id }}">
+                                                    {% csrf_token %}                                                     {% if forloop.last %}dropup{% endif %}
+                                                    <input type="hidden" name="siteid" value="{{ result.site.id }}">
+                                                </form>
+
+                                                <div class="btn-group {% if forloop.last %}dropup{% endif %}">
+                                                    <a class="btn btn-primary ajax edit" ajax-modal-url="{% url 'site_content_edit' result.site.id %}?nexturl={{ request.get_full_path }}" href="#edit-{{ result.site.id }}">Edit</a>
+                                                    <a class="btn ajax detail" ajax-modal-url="{% url 'site_content_detail' result.site.id %}" href="#detail-{{ result.site.id }}">Details</a>
+                                                    <!--button class="btn" form="detail-{{ result.site.id }}" data-toggle="dropdown">
+                                                        Category
+                                                        <span class="caret"></span>
+                                                    </button>
+
+                                                    <ul class="dropdown-menu pull-right">
+                                                        {%  for cat in categories %}
+                                                            {% if cat != category %}
+                                                                <li><a href="#">{{ cat }}</a></li>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                        <li><a href="#">Other</a></li>
+                                                    </ul-->
                                                 </div>
                                             </td>
                                             <td>
@@ -82,7 +100,7 @@
                 <div class="tab-pane" id="other">
                     <table class="table">
                         {% for result in results %}
-                            {% if not result.site.category %}
+                            {% if not result.site.category and not result.site.banned %}
                                 <tr>
                                     <td>
                                         <span class="badge badge-info" data-toggle="tooltip" data-placement="top" data-original-title="Original sequence number">{{ result.sequence }}.</span> <small>
@@ -91,9 +109,23 @@
                                     </td>
                                     <td>{{ result.site.name }}</td>
                                     <td>
-                                        <div class="btn-group">
-                                            <a class="btn btn-primary ajax detail" ajax-modal-url="{% url 'site_content_detail' result.site.id %}" href="#detail-{{ result.site.id }}" data-toggle="modal">Details</a>
+                                        <div class="btn-group {% if forloop.last %}dropup{% endif %}">
+                                            <a class="btn btn-primary ajax edit" ajax-modal-url="{% url 'site_content_edit' result.site.id %}?nexturl={{ request.get_full_path }}" href="#edit-{{ result.site.id }}">Edit</a>
+                                            <a class="btn ajax detail" ajax-modal-url="{% url 'site_content_detail' result.site.id %}" href="#detail-{{ result.site.id }}">Details</a>
+                                            <!--a class="btn btn-primary ajax detail" ajax-modal-url="{% url 'site_content_detail' result.site.id %}" href="#detail-{{ result.site.id }}" data-toggle="modal">Details</a-->
                                             {# <a class="btn" href="#edit-{{ result.site.id }}">Edit</a> #}
+                                            <!--button class="btn" form="detail-{{ result.site.id }}" data-toggle="dropdown">
+                                                Category
+                                                <span class="caret"></span>
+                                            </button>
+
+                                            <ul class="dropdown-menu pull-right">
+                                                {%  for cat in categories %}
+                                                    {% if cat != category %}
+                                                        <li><a href="#">{{ cat }}</a></li>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </ul-->
                                         </div>
                                     </td>
                                     <td>
