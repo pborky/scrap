@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from django.http import HttpResponseNotFound, HttpResponseServerError, HttpResponse
 from django.views.decorators import http, cache
+from django.contrib.auth import get_user
 
 from quirks.functional import maybe
 from quirks.iterable import itake, first, imap
@@ -73,6 +74,8 @@ class search_submit:
         if engine.symbol not in engines:
             return {}
 
+        user_keywords = Keyword.objects.filter(group__in=get_user(request).groups.all())
+
         search = Search.objects.create(engine=engine, q=query)
         search.save()
 
@@ -96,7 +99,7 @@ class search_submit:
             fresh = False
             if not site:
                 scraped_keywords = root_page_keywords(bare_url)
-                for kw in Keyword.objects.all():
+                for kw in user_keywords:
                     if kw.keyword in scraped_keywords:
                         category = kw.category
                         keywords.append(kw)

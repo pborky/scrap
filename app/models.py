@@ -1,4 +1,5 @@
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.contrib.auth.models import Group
 from django.db.models import Model, CharField, BooleanField, FloatField, URLField, ForeignKey, ManyToManyField,\
                             DateField, GenericIPAddressField, DateTimeField, IntegerField
 
@@ -56,12 +57,11 @@ class ShipmentMethod(Model):
 
 class Keyword(Model):
     keyword =  CharField(verbose_name='Keyword',max_length=100, unique=True)
-    prior = FloatField(verbose_name='Priror probability',validators=[MinValueValidator(0),MaxValueValidator(1)])
-    posterior = FloatField(verbose_name='Posterior probability',validators=[MinValueValidator(0),MaxValueValidator(1)])
+    group = ManyToManyField(Group)
     category = ForeignKey(SiteCategory)
     active = BooleanField(verbose_name='Active', default=False)
     def __unicode__(self):
-        return u'%s %s (%s)' %(active_flag(self),  self.keyword, unicode(self.category))
+        return u'%s %s (%s; Groups: %s)' % (active_flag(self), self.keyword,unicode(self.category),', '.join(map(unicode,self.group.all())))
     class Meta:
         ordering = ["-active", "keyword"]
         verbose_name = "Keyword"
@@ -125,10 +125,11 @@ class SIteContent(Model):
 
 class Queries(Model):
     q = CharField(max_length=100, verbose_name='Search String')
+    group = ForeignKey(Group, null=True, blank=True)
     def __unicode__(self):
-        return u'%s' % self.q
+        return u'%s (Group: %s)' % (self.q, self.group)
     class Meta:
-        ordering = ["q"]
+        ordering = ['group', "q"]
         verbose_name = "Search Query"
         verbose_name_plural = "Search Queries"
 
