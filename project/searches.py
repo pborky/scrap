@@ -6,6 +6,9 @@ from quirks.iterable import itake
 from .scraping import Chain, Form, Items, MySession , KeywordSet
 from .addrutil import addrutil
 
+import logging
+logger = logging.getLogger(__name__)
+
 class ScraperMetaclass(type):
     def __new__(mcs, name, bases, attrs):
         Meta = attrs.pop('Meta', None)
@@ -32,7 +35,16 @@ class Scraper(object):
         self._sess = self._get_session(MySession)
         #self._scraping = self._get_scrapping(self._sess)
     def __call__(self, *args, **kwargs):
-        return self._scraping(self._sess, *args, **kwargs)
+        try:
+            return self._scraping(self._sess, *args, **kwargs)
+        except Exception as e:
+            logger.error(e)
+            logger.warning('Reloading webkit session.')
+            try:
+                self._sess.kill()
+            except Exception:
+                pass
+            self._sess = self._get_session(MySession)
     def __del__(self):
         self._sess.kill()
         super(Scraper,self).__del__()
