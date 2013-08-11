@@ -1,3 +1,5 @@
+from unidecode import unidecode
+
 __author__ = 'pborky'
 
 from django.contrib import messages
@@ -74,7 +76,10 @@ class search_submit:
         if engine.symbol not in engines:
             return {}
 
-        user_keywords = Keyword.objects.filter(group__in=get_user(request).groups.all())
+        user_keywords = map(
+            lambda key: unidecode(key.decode('utf-8')).lower(),
+            Keyword.objects.filter(group__in=get_user(request).groups.all())
+        )
 
         search = Search.objects.create(engine=engine, q=query)
         search.save()
