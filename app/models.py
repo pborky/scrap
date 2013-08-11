@@ -57,7 +57,7 @@ class ShipmentMethod(Model):
 
 class Keyword(Model):
     keyword =  CharField(verbose_name='Keyword',max_length=100, unique=True)
-    group = ManyToManyField(Group)
+    group = ManyToManyField(Group, blank=True)
     category = ForeignKey(SiteCategory)
     active = BooleanField(verbose_name='Active', default=False)
     def __unicode__(self):
