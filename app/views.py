@@ -1,4 +1,3 @@
-from unidecode import unidecode
 
 __author__ = 'pborky'
 
@@ -17,6 +16,8 @@ from .models import SearchResult, SiteCategory, Search, Site, SIteContent, SiteA
 from project.helpers import view
 from project.addrutil import addrutil
 from project.searches import google_search, root_page_keywords, engines
+
+from unidecode import unidecode
 
 
 def url_depath(url):
@@ -76,10 +77,7 @@ class search_submit:
         if engine.symbol not in engines:
             return {}
 
-        user_keywords = map(
-            lambda key: unidecode(key.decode('utf-8')).lower(),
-            Keyword.objects.filter(group__in=get_user(request).groups.all())
-        )
+        user_keywords = Keyword.objects.filter(group__in=get_user(request).groups.all())
 
         search = Search.objects.create(engine=engine, q=query)
         search.save()
@@ -105,7 +103,9 @@ class search_submit:
             if not site:
                 scraped_keywords = root_page_keywords(bare_url)
                 for kw in user_keywords:
-                    if kw.keyword in scraped_keywords:
+                    try: kwrd = unidecode(kw.keyword.decode('utf-8')).lower()
+                    except:kwrd = kw.keyword
+                    if kwrd in scraped_keywords:
                         category = kw.category
                         keywords.append(kw)
                         break
